@@ -205,3 +205,13 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+.env
+
+# Google auth keys and secrets
+
+# For Oauth 2.0 client secrets
+client_secret.json
+
+# For service account key
+service_account_key.json
