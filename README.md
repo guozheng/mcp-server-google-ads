@@ -8,7 +8,8 @@ Google Ads is a paid search advertising platform that allows users to create and
    * [Google Ads API](https://developers.google.com/google-ads/api)
    * [Introduction](https://developers.google.com/google-ads/api/docs/get-started/introduction)
    * [Authentication](https://developers.google.com/google-ads/api/docs/oauth/overview), we are using [service account authentication](https://developers.google.com/google-ads/api/docs/oauth/service-accounts)
-   * [Code Samples](https://developers.google.com/google-ads/api/samples)
+   * [REST API Code Examples](https://developers.google.com/google-ads/api/rest/examples): in this repository, we are mostly using REST APIs. There are also libraries supporting different languages, for examples using the libraries, see [Google Ads API Libraries Examples](https://developers.google.com/google-ads/api/samples)
+  
 
 ## Google Ads API Setup
 
@@ -19,7 +20,7 @@ We are using service account authentication to access Google Ads API. All the de
 1. Go to the [Google Ads Console](https://ads.google.com/home)
 2. Click on 'Get started'
 3. Follow the instructions to create a Google Ads account, this will be your manager account.
-4. Get a developer token from the [Google Ads API Console](https://ads.google.com/home/api). Initially, you can only get a test developer token, which only allows you to access test accounts. To get a production developer token, you need to submit a request to Google Ads API Console and wait a few days to get the official developer token.
+4. Apply for a developer token by following the instructions here: [Google Ads API Token Application](https://support.google.com/adspolicy/contact/new_token_application). Initially, you can automatically get a test developer token, which only allows you to access test accounts. To get a production developer token, you need to submit a request (using this form) to Google Ads API Console and wait a few days for approval before you can get the official developer token that works with all the accounts.
 5. Create a test manager account. The test developer token allows you to access test accounts only.
 
 ### Create a Google Cloud Project

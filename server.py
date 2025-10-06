@@ -1,9 +1,11 @@
 import logging
 import os
+import json
 import utils
 import requests
 from pydantic import Field
 from typing import List, Dict, Any
+import datetime
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
@@ -26,6 +28,53 @@ GOOGLE_ADS_DEVELOPER_TOKEN = os.getenv("GOOGLE_ADS_DEVELOPER_TOKEN")
 GOOGLE_ADS_AUTH_TYPE = "service_account"
 
 
+async def run_post_request(
+    customer_id: str = Field(description="Customer ID"),
+    api_operation: str = Field(description="API operation, e.g. campaignBudgets:mutate"),
+    json_body: Dict[str, Any] = Field(description="Request body as dict")
+) -> Dict[str, Any]:
+    """
+    Run POST request
+
+    Example responses:
+
+    1. creating a new campaign budget:
+    {
+        "results": [
+            {
+            "resourceName": "customers/1234567890/campaignBudgets/9876543210"
+            }
+        ]
+    }
+    """
+
+    try:
+        credentials = utils.get_service_account_credentials(GOOGLE_ADS_CREDENTIALS_PATH, SCOPES)
+        headers = utils.generated_request_headers(GOOGLE_ADS_DEVELOPER_TOKEN, GOOGLE_ADS_LOGIN_CUSTOMER_ID, credentials)
+        headers["content-type"] = "application/json"    
+
+        customer_id = utils.format_customer_id(customer_id)
+        url = f"https://googleads.googleapis.com/{API_VERSION}/customers/{customer_id}/{api_operation}"
+
+        logger.info(f"Running POST request: {url}")
+        logger.info(f"Request body: {json.dumps(json_body, indent=2)}")
+
+        response = requests.post(url, headers=headers, json=json_body)
+
+        if response.status_code != 200:
+            raise Exception(f"Error running POST request: {response.text}")
+        
+        results = response.json()
+        if not results.get("results"):
+            return []
+
+        return results.get("results")
+
+    except Exception as e:
+        logger.error(f"Error running POST request: {e}")
+        raise e
+
+
 ############## MCP Tools ##############
 
 @mcp.tool()
@@ -33,12 +82,25 @@ async def run_gaql(
     customer_id: str = Field(description="Customer ID"), 
     gaql: str = Field(description="GAQL query")
     ) -> List[Dict[str, Any]]:
+    """
+    Run a GAQL query.
+    
+    Args:
+        customer_id: Customer ID
+        gaql: GAQL query
+    
+    Returns:
+        List[Dict[str, Any]]: List of results
+    """
+
     try:
         credentials = utils.get_service_account_credentials(GOOGLE_ADS_CREDENTIALS_PATH, SCOPES)
         headers = utils.generated_request_headers(GOOGLE_ADS_DEVELOPER_TOKEN, GOOGLE_ADS_LOGIN_CUSTOMER_ID, credentials)    
 
         customer_id = utils.format_customer_id(customer_id)
         url = f"https://googleads.googleapis.com/{API_VERSION}/customers/{customer_id}/googleAds:search"
+
+        logger.debug(f"Running GAQL: {gaql}")
 
         response = requests.post(url, headers=headers, json={"query": gaql})
 
@@ -55,6 +117,73 @@ async def run_gaql(
         logger.error(f"Error running GAQL: {e}")
         raise e
 
+
+############## MCP tools using REST APIs ##############
+
+@mcp.tool()
+async def create_campaign_budget(
+    customer_id: str = Field(description="Customer ID"),
+    campaign_budget: Dict[str, Any] = Field(description="Campaign budget")
+) -> Dict[str, Any]:
+    """
+    Create a campaign budget.
+    
+    Args:
+        customer_id: Customer ID
+        campaign_budget: Campaign budget
+    
+    Returns:
+        Dict[str, Any]: Campaign budget
+    """
+
+    operations = {
+        "operations": [
+            {
+                "create": campaign_budget
+            }
+        ]
+    }
+    return await run_post_request(customer_id, "campaignBudgets:mutate", operations)
+
+
+@mcp.tool()
+async def create_display_campaign(
+    customer_id: str = Field(description="Customer ID"),
+    campaign: Dict[str, Any] = Field(description="Campaign")
+) -> Dict[str, Any]:
+    """
+    Create a campaign.
+    
+    Args:
+        customer_id: Customer ID
+        campaign: Campaign
+    
+    Returns:
+        Dict[str, Any]: Campaign
+    """
+
+    # first, create a campaign budget, find the budget resource name in the response
+    budget = {
+        "name": "Test Campaign Budget: " + str(datetime.datetime.now()),
+        "amountMicros": 100000,
+        "deliveryMethod": "STANDARD"
+    }
+    budget_result = await create_campaign_budget(customer_id, budget)
+    budget_resource_name = budget_result[0]["resourceName"]
+
+    # second, create a campaign, using the newly created budget resource name
+    campaign["campaignBudget"] = budget_resource_name
+    operations = {
+        "operations": [
+            {
+                "create": campaign
+            }
+        ]
+    }
+    return await run_post_request(customer_id, "campaigns:mutate", operations)
+
+
+############## MCP tools using GAQL queries ##############
 
 @mcp.tool()
 async def is_manager_account(customer_id: str = Field(description="Customer ID")) -> bool:
