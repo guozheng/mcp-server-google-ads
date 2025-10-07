@@ -4,7 +4,7 @@ import json
 import utils
 import requests
 from pydantic import Field
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import datetime
 
 logging.basicConfig(level=logging.INFO,
@@ -119,6 +119,60 @@ async def run_gaql(
 
 
 ############## MCP tools using REST APIs ##############
+
+@mcp.tool()
+async def create_ad(
+    customer_id: str = Field(description="Customer ID"),
+    ad_group_id: str = Field(description="Ad group ID"),
+    ad: Dict[str, Any] = Field(description="Ad")
+) -> Dict[str, Any]:
+    """
+    Create an ad.
+    
+    Args:
+        customer_id: Customer ID
+        ad_group_id: Ad group ID
+        ad: Ad
+    
+    Returns:
+        Dict[str, Any]: Ad
+    """
+
+    operations = {
+        "operations": [
+            {
+                "create": ad
+            }
+        ]
+    }
+    return await run_post_request(customer_id, "adGroupAds:mutate", operations)
+
+
+@mcp.tool()
+async def create_ad_group(
+    customer_id: str = Field(description="Customer ID"),
+    ad_group: Dict[str, Any] = Field(description="Ad group")
+) -> Dict[str, Any]:
+    """
+    Create an ad group.
+    
+    Args:
+        customer_id: Customer ID
+        ad_group: Ad group
+    
+    Returns:
+        Dict[str, Any]: Ad group
+    """
+
+    operations = {
+        "operations": [
+            {
+                "create": ad_group
+            }
+        ]
+    }
+    return await run_post_request(customer_id, "adGroups:mutate", operations)
+
 
 @mcp.tool()
 async def create_campaign_budget(
@@ -268,7 +322,7 @@ async def is_manager_account(customer_id: str = Field(description="Customer ID")
 
 
 @mcp.tool()
-async def list_client_accounts(manager_customer_id: str = Field(description="Manager account ID")) -> str:
+async def list_client_accounts(manager_customer_id: str = Field(description="Manager account ID")) -> List[Dict[str, Any]]:
     """
     List all client accounts for a manager account.
 
@@ -297,7 +351,7 @@ async def list_client_accounts(manager_customer_id: str = Field(description="Man
 
 
 @mcp.tool()
-async def list_campaigns(customer_id: str = Field(description="Customer account ID")) -> str:
+async def list_campaigns(customer_id: str = Field(description="Customer account ID")) -> List[Dict[str, Any]]:
     """
     List all campaigns for a customer account.
 
@@ -350,7 +404,78 @@ async def list_campaigns(customer_id: str = Field(description="Customer account 
     return await run_gaql(customer_id, query)
 
 
+@mcp.tool()
+async def list_ad_groups(
+    customer_id: str = Field(description="Customer account ID"),
+    campaign_id: Optional[str] = None
+) -> List[Dict[str, Any]]:
+    """
+    List ad groups for a customer account, optionally filtered by campaign ID.
+    
+    Args:
+        customer_id: Customer account ID
+        campaign_id: Optional campaign ID to filter ad groups
+    
+    Returns:
+        List[Dict[str, Any]]: List of ad groups
+    """
+    if campaign_id:
+        logger.info(f"Listing ad groups for campaign: {campaign_id}, customer: {customer_id}")
+        query = f"""
+        SELECT
+            ad_group.id,
+            ad_group.name,
+            ad_group.status
+        FROM ad_group
+        WHERE campaign.id = '{campaign_id}'
+        """
+    else:
+        logger.info(f"Listing all the ad groups for customer: {customer_id}")
+        query = """
+        SELECT
+            ad_group.id,
+            ad_group.name,
+            ad_group.status
+        FROM ad_group
+        """
+        
+    return await run_gaql(customer_id, query)
 
+
+@mcp.tool()
+async def list_ads(
+    customer_id: str = Field(description="Customer account ID"),
+    ad_group_id: Optional[str] = None
+) -> List[Dict[str, Any]]:
+    """
+    List ads for a customer account, optionally filtered by ad group ID.
+    
+    Args:
+        customer_id: Customer account ID
+        ad_group_id: Optional ad group ID to filter ads
+    
+    Returns:
+        List[Dict[str, Any]]: List of ads
+    """
+    if ad_group_id:
+        logger.info(f"Listing ads for ad group: {ad_group_id}, customer: {customer_id}")
+        query = f"""
+        SELECT
+            ad_group_ad.ad.id,
+            ad_group_ad.ad.final_urls
+        FROM ad_group_ad
+        WHERE ad_group.id = '{ad_group_id}'
+        """
+    else:
+        logger.info(f"Listing all the ads for customer: {customer_id}")
+        query = """
+        SELECT
+            ad_group_ad.ad.id,
+            ad_group_ad.ad.final_urls
+        FROM ad_group_ad
+        """
+    
+    return await run_gaql(customer_id, query)
 
 
 ############## Other MCP Resources and Prompts ##############
@@ -509,4 +634,4 @@ def gaql_help() -> str:
 
 
 if __name__ == "__main__":
-    mcp.run(transports="stdio")
+    mcp.run(transport="stdio")
