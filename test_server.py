@@ -7,11 +7,15 @@ from server import (
     create_display_campaign,
     list_ad_groups,
     list_ads,
+    create_ad_group,
+    create_ad,
+    create_image_asset,
 )
 import json
 import logging
 import datetime
 import sys
+import base64
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
@@ -95,6 +99,65 @@ def test_list_ads():
     logger.info(json.dumps(result, indent=2))
 
 
+def test_create_ad_group():
+    client_customer_id = "9711179739"
+    ad_group = {
+        "name": "Test Ad Group: " + str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
+        "campaign": "customers/2857151978/campaigns/186234441837",
+        "status": "ENABLED",
+        "type": "DISPLAY_STANDARD",
+        "cpcBidMicros": 100000,
+        "targetCpaMicros": 100000,
+        "adRotationMode": "OPTIMIZE"
+    }
+    result = asyncio.run(create_ad_group(client_customer_id, ad_group))
+    logger.info(json.dumps(result, indent=2))
+
+
+def test_create_ad():
+    client_customer_id = "9711179739"
+    ad_group_id = "186234441837"
+    ad_group_resource = "customers/" + client_customer_id + "/adGroups/" + ad_group_id
+    image_asset_resource = "customers/" + client_customer_id + "/assets/297374613372"
+    ad = {
+        "adGroup": ad_group_resource,
+        "status": "ENABLED",
+        "ad": {
+            "name": "earbuds",
+            "finalUrls": [
+                "https://www.yahoo.com"
+            ],
+            "imageAd": {
+                "imageAsset": {
+                    "asset": image_asset_resource
+                }
+            },
+            "displayUrl": "https://www.yahoo.com"
+        }
+    }
+    result = asyncio.run(create_ad(client_customer_id, ad))
+    logger.info(json.dumps(result, indent=2))
+
+
+def test_create_image_asset():
+    client_customer_id = "9711179739"
+    
+    # Read image file and encode to base64
+    with open("images/earbuds.jpg", "rb") as image_file:
+        image_data = base64.b64encode(image_file.read()).decode('utf-8')
+    
+    image_asset = {
+        "name": "earbuds",
+        "type": "IMAGE",
+        "imageAsset": {
+            "data": image_data,
+            "mimeType": "IMAGE_JPEG"
+        }
+    }
+    result = asyncio.run(create_image_asset(client_customer_id, image_asset))
+    logger.info(json.dumps(result, indent=2))
+
+
 if __name__ == "__main__":
     # Map test method names to functions
     test_methods = {
@@ -105,6 +168,9 @@ if __name__ == "__main__":
         "test_create_display_campaign": test_create_display_campaign,
         "test_list_ad_groups": test_list_ad_groups,
         "test_list_ads": test_list_ads,
+        "test_create_ad_group": test_create_ad_group,
+        "test_create_ad": test_create_ad,
+        "test_create_image_asset": test_create_image_asset
     }
     
     # Get method name from command line argument

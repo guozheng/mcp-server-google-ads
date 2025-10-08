@@ -121,9 +121,33 @@ async def run_gaql(
 ############## MCP tools using REST APIs ##############
 
 @mcp.tool()
+async def create_image_asset(
+    customer_id: str = Field(description="Customer ID"),
+    image_asset: Dict[str, Any] = Field(description="Image asset")
+) -> Dict[str, Any]:
+    """
+    Create an image asset.
+    
+    Args:
+        customer_id: Customer ID
+        image_asset: Image asset
+    
+    Returns:
+        Dict[str, Any]: Image asset
+    """
+
+    operations = {
+        "operations": [
+            {
+                "create": image_asset
+            }
+        ]
+    }
+    return await run_post_request(customer_id, "assets:mutate", operations)
+
+@mcp.tool()
 async def create_ad(
     customer_id: str = Field(description="Customer ID"),
-    ad_group_id: str = Field(description="Ad group ID"),
     ad: Dict[str, Any] = Field(description="Ad")
 ) -> Dict[str, Any]:
     """
@@ -155,6 +179,17 @@ async def create_ad_group(
 ) -> Dict[str, Any]:
     """
     Create an ad group.
+
+    ad_group example:
+    {
+        "name": "Test Ad Group: " + str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
+        "campaign": "customers/2857151978/campaigns/186234441837",
+        "status": "ENABLED",
+        "type": "DISPLAY_STANDARD",
+        "cpcBidMicros": 100000,
+        "targetCpaMicros": 100000,
+        "adRotationMode": "OPTIMIZE"
+    }
     
     Args:
         customer_id: Customer ID
