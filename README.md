@@ -115,6 +115,11 @@ uv run test_server.py
 7. Go to settings -> Connectors, you will see a new connector named `googleAdsServer`, you can configure the tools in Configure
 
 
+## References and Credits
+
+   1. [mcp-google-ads](https://github.com/cohnen/mcp-google-ads): borrowed some code and ideas from this repository. Instead of supporting both user-login based oauth, this repo only supports service account authentication.
+   2. [Google Ads API](https://developers.google.com/google-ads/api)
+   3. [Google Ads REST API Examples](https://developers.google.com/google-ads/api/rest/overview)
 
 
    
